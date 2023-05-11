@@ -1,0 +1,271 @@
+import java.util.*;
+public class Main {
+
+    static String [] s;
+    static long sum = 0;
+
+    static HashMap<String, Library> libs;
+    static HashMap<String, Users> usr;
+    static HashMap<String, Category> cats;
+
+    public static void main(String[] args) {
+        Scanner scan = new Scanner(System.in);
+        String str = scan.nextLine();
+        hashStart();
+        while (!str.equals("finish")) {
+            String[] tok = str.split("#");
+            if (tok.length > 1)
+                s = tok[1].split("//|");
+            test(tok[0]);
+            str = scan.nextLine();
+
+        }
+
+    }
+    static void hashStart() {
+        libs = new HashMap<>();
+        usr = new HashMap<>();
+        cats = new HashMap<>();
+        cats.put("null", new Category("null", "null"));
+    }
+    static void test(String a) {
+        switch (a) {
+            case "add-library" -> addLibrary();
+            case "add-category" -> addCategory();
+            case "add-book" -> addBook();
+            case "remove-resource" -> removeSource();
+            case "add-manager" -> addManager();
+            case "remove-user" -> removeUser();
+            case "add-ganjineh-book" -> addGanjinehBook();
+            case "add-selling-book" -> addSellingBook();
+            case "remove-resource" -> removeResource();
+            case "add-thesis" -> addThesis();
+            case "add-student" -> addStudent();
+            case "add-staff" -> addStaff();
+            case "borrow" -> Borrow();
+            case "buy" -> Buy();
+            case "return" -> Return();
+            case "read" -> Read();
+            case "search" -> Search();
+            case "search-user" -> searchUser();
+            case "category-report" -> categoryReport();
+            case "library-report" -> libraryReport();
+            case "report-passed-deadline" -> reportPassedDeadline();
+            case "report-penalties-sum" -> reportPenaltiesSum();
+            case "add-comment" -> addComment();
+        }
+    }
+
+    private static void Buy() {
+        if (!usr.containsKey(s[0]) || !libs.containsKey(s[2]) || !libs.get(s[2]).src.containsKey(s[3])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).getPassword().equals(s[1])) {
+            Answer.invalidPass();
+            return;
+        }
+    }
+
+    private static void Borrow() {
+        if (!usr.containsKey(s[0]) || !libs.containsKey(s[2]) || !libs.get(s[2]).src.containsKey(s[3])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).getPassword().equals(s[1])) {
+            Answer.invalidPass();
+            return;
+        }
+        if (usr.get(s[0]).bSrc.containsKey(s[3]) || libs.get(s[2]).src.get(s[3]).getBorrow() >= libs.get(s[2]).src.get(s[3]).getNumberOfCopy()) {
+            Answer.notAllowed();
+            return;
+        }
+        long time = Time(s[4], s[5]);
+        for (Source src : usr.get(s[0]).bSrc.values()) {
+            if (time - src.times.get(s[0]) > usr.get(s[0]).time(src)) {
+                Answer.notAllowed();
+                return;
+            }
+        }
+        usr.get(s[0]).borrow(libs.get(s[2]).src.get(s[3]), time);
+    }
+
+    private static void addStaff() {
+        if (!usr.containsKey(s[0])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isAdm(s[1])) return;
+        if (usr.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        if (s[9].equals("staff")) usr.put(s[2], new Staff(s[2], s[3], s[4], s[5], s[6], s[7], s[8]));
+        else usr.put(s[2], new Professor(s[2], s[3], s[4], s[5], s[6], s[7], s[8]));
+        Answer.success();
+    }
+
+    private static void addStudent() {
+        if (!usr.containsKey(s[0])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isAdm(s[1])) return;
+        if (usr.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        usr.put(s[2], new Student(s[2], s[3], s[4], s[5], s[6], s[7], s[8]));
+        Answer.success();
+    }
+
+    private static void addThesis() {
+        if (!usr.containsKey(s[0]) || !cats.containsKey(s[7]) || !libs.containsKey(s[8])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isMng(s[1], s[8])) return;
+        if (libs.get(s[8]).src.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        libs.get(s[8]).src.put(s[2], new Thesis(s[2], s[3], s[4], s[8], s[6], s[5]));
+        Answer.success();
+    }
+
+    private static void removeResource() {
+        if (!usr.containsKey(s[0]) || !libs.containsKey(s[3]) || !libs.get(s[3]).src.containsKey(s[2])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isMng(s[1], s[3])) return;
+        if (libs.get(s[3]).src.get(s[2]).getBorrow() > 0) {
+            Answer.notAllowed();
+            return;
+        }
+        libs.get(s[3]).src.remove(s[2]);
+        Answer.success();
+    }
+
+    private static void addSellingBook() {
+        if (!usr.containsKey(s[0]) || !cats.containsKey(s[10]) || !libs.containsKey(s[11])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isMng(s[1], s[11])) return;
+        if (libs.get(s[11]).src.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        libs.get(s[11]).src.put(s[2], new Selling_Book(s[2], s[3], s[4], s[11], s[6], Integer.parseInt(s[7]), Integer.parseInt(s[8]), Integer.parseInt(s[9]), s[5]));
+        Answer.success();
+    }
+
+    private static void addGanjinehBook() {
+        if (!usr.containsKey(s[0]) || !cats.containsKey(s[8]) || !libs.containsKey(s[9])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isMng(s[1], s[9])) return;
+        if (libs.get(s[9]).src.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        libs.get(s[9]).src.put(s[2], new Ganjineh_Book(s[2], s[3], s[4], s[9], s[6], s[7], s[5]));
+        Answer.success();
+    }
+
+    private static void removeUser() {
+        if (!usr.containsKey(s[0]) || !usr.containsKey(s[2])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isAdm(s[1])) return;
+        if (usr.get(s[2]).bSrc.size() > 0 || usr.get(s[2]).isDebtor()) {
+            Answer.notAllowed();
+            return;
+        }
+        usr.remove(s[2]);
+        Answer.success();
+    }
+
+    private static void addManager() {
+        if (!usr.containsKey(s[0]) || !libs.containsKey(s[9])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isAdm(s[1])) return;
+        if (usr.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        usr.put(s[2], new Manager(s[2], s[3], s[4], s[5], s[6], s[7], s[8], s[9]));
+        Answer.success();
+    }
+
+    private static void removeSource() {
+        if (!usr.containsKey(s[0]) || !libs.containsKey(s[3]) || !libs.get(s[3]).src.containsKey(s[2])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isMng(s[1], s[3])) return;
+        if (libs.get(s[3]).src.get(s[2]).getBorrow() > 0) {
+            Answer.notAllowed();
+            return;
+        }
+        libs.get(s[0]).src.remove(s[2]);
+        Answer.success();
+    }
+
+    private static void addBook() {
+        if (!usr.containsKey(s[0]) || !cats.containsKey(s[8]) || !libs.containsKey(s[9])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isMng(s[1], s[9])) return;
+        if (libs.get(s[9]).src.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        libs.get(s[9]).src.put(s[2], new Book(s[2], s[3], s[4], s[9], s[6], Integer.parseInt(s[7]), s[5]));
+        Answer.success();
+    }
+
+    private static void addCategory() {
+        if (!usr.containsKey(s[0]) || !cats.containsKey(s[3])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isAdm(s[1])) return;
+        if (cats.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        cats.put(s[2], new Category(s[2], s[3]));
+        if (!s[3].equals("null")) {
+            cats.get(s[3]).kids.add(s[2]);
+        }
+        Answer.success();
+    }
+
+    private static void addLibrary() {
+        if (!usr.containsKey(s[0])) {
+            Answer.notFound();
+            return;
+        }
+        if (!usr.get(s[0]).isAdm(s[1])) return;
+        if (libs.containsKey(s[2])) {
+            Answer.duplicateId();
+            return;
+        }
+        libs.put(s[2], new Library(s[2], s[3], Integer.parseInt(s[4]), Integer.parseInt(s[5]), s[6]));
+        Answer.success();
+    }
+
+    private static long Time(String d, String t) {
+        String[] D = d.split("-");
+        String[] T = t.split(":");
+        return (Integer.parseInt(D[0]) - 1970) * 518400L + (Integer.parseInt(D[1]) - 1) * 43200L
+                + (Integer.parseInt(D[2]) - 1) * 1440L + Integer.parseInt(T[0]) * 60L + Integer.parseInt(T[1]);
+    }
+}
